@@ -22,12 +22,12 @@ from os import makedirs
 from sys import exit
 import configparser
 
-DEFAULT_DOWNLOAD_DIRECTORY="./Downloads"
+DEFAULT_DOWNLOAD_DIRECTORY="."
 
 # Custom logger
 log = logging.getLogger(__name__)
-log.setLevel(logging.DEBUG)
-#log.setLevel(logging.WARNING)
+#log.setLevel(logging.DEBUG)
+log.setLevel(logging.WARNING)
 handler = logging.StreamHandler()
 handler.setFormatter(logging.Formatter(fmt='[%(asctime)s][%(name)s][%(levelname)s] %(message)s', datefmt='%H:%M:%S'))
 log.addHandler(handler)
@@ -60,13 +60,12 @@ def get_download_link(page, search_rule):
     '''Receives str(webpage's html content) and str(search rule), returns link to download file'''
     log.debug(f"Searching for expression in html source")
     r = search(search_rule, page)
-    #r = search('swf: "(.*)", ', page_html)
-    #r = search('Size: <a href="(.*)">', page_html)
     raw_link = r.group(1)
     log.debug(f"Found download link link: {raw_link}, attempting to cleanup")
 
     cl = raw_link.rsplit("?", 1) #avoiding the issue described in comment above
-    clean_link = str(cl[0])
+    cl = str(cl[0])
+    clean_link = cl.replace("\\", "") #avoiding backslashes in url - requests cant into them
     log.debug(f"Clean link is: {clean_link}")
 
     return clean_link
@@ -124,6 +123,7 @@ except Exception as e:
     exit(1)
 
 try:
+    print(f"Downloading the file from {link} - depending on size, it may require some time")
     download_file(link)
 except Exception as e:
     log.error(f"Some unfortunate error has happend: {e}")
