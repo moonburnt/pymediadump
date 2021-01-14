@@ -87,13 +87,11 @@ except Exception as e:
     print("Couldnt find download link :( Are you sure this link should contain supported file type?")
     exit(1)
 
-sleep(10)
-
 for link in links:
     try:
         print(f"Downloading the file from {link} - depending on size, it may require some time")
+        sleep(3) #waiting a bit to avoid getting banned for spamming requests. I should probably turn this number into launch argument
         pmd.download_file(link, DOWNLOAD_DIRECTORY)
-        sleep(10)
     except Exception as e:
         log.error(f"Some unfortunate error has happend: {e}")
         print("Couldnt download the files :( Please double-check your internet connection and try again")
