@@ -18,6 +18,8 @@ import requests
 import logging
 from re import findall
 
+from urllib.parse import urlparse
+
 # Custom logger
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
@@ -36,16 +38,25 @@ class PyMediaDump:
         log.debug(f"Fetching page content from {link}")
         page = self.session.get(link, timeout = 100)
         page.raise_for_status()
-        log.debug(f"Got following cookies:{self.session.cookies.get_dict()}")
+
+        #this part may be done better, as it will break if you will try to fetch multiple pages before downloading
+        url = urlparse(link)
+        self.referer = f'{url.scheme}://{url.netloc}/'
+
+        log.debug(f"Saved {self.referer} as referer for future downloads")
 
         return page.text
 
     def download_file(self, link, downloads_directory):
         '''Receives str(link to download file) and str(path to download directory), saves file to dir'''
         log.debug(f"Fetching file from {link}")
-        data = self.session.get(link, timeout = 100)
+        if self.referer:
+            log.debug(f"Found referer, will use it to download file: {self.referer}")
+            data = self.session.get(link, timeout = 100, headers={'referer': self.referer})
+        else:
+            log.debug("Didnt find referer, will try to download without it")
+            data = self.session.get(link, timeout = 100)
         data.raise_for_status()
-        log.debug(f"Got following cookies:{self.session.cookies.get_dict()}")
 
         log.debug(f"Trying to determine filename")
         fn = link.rsplit('/', 1) #this aint perfect, coz link may contain some garbage such as id after file name
