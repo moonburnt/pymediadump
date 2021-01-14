@@ -16,18 +16,18 @@
 
 import requests
 import logging
-from re import search
+from re import findall
 import argparse
 from os import makedirs
 from sys import exit
 import configparser
 
-DEFAULT_DOWNLOAD_DIRECTORY="."
+DEFAULT_DOWNLOAD_DIRECTORY="./Downloads"
 
 # Custom logger
 log = logging.getLogger(__name__)
-#log.setLevel(logging.DEBUG)
-log.setLevel(logging.WARNING)
+log.setLevel(logging.DEBUG)
+#log.setLevel(logging.WARNING)
 handler = logging.StreamHandler()
 handler.setFormatter(logging.Formatter(fmt='[%(asctime)s][%(name)s][%(levelname)s] %(message)s', datefmt='%H:%M:%S'))
 log.addHandler(handler)
@@ -56,19 +56,24 @@ def download_file(link):
         f.write(data.content)
     log.info(f"Successfully saved {filename} as {save_path}")
 
-def get_download_link(page, search_rule):
+def get_download_links(page, search_rule):
     '''Receives str(webpage's html content) and str(search rule), returns link to download file'''
     log.debug(f"Searching for expression in html source")
-    r = search(search_rule, page)
-    raw_link = r.group(1)
-    log.debug(f"Found download link link: {raw_link}, attempting to cleanup")
+    raw_links = findall(search_rule, page) #this will create list with all matching links
 
-    cl = raw_link.rsplit("?", 1) #avoiding the issue described in comment above
-    cl = str(cl[0])
-    clean_link = cl.replace("\\", "") #avoiding backslashes in url - requests cant into them
-    log.debug(f"Clean link is: {clean_link}")
+    log.debug(f"Found matching download links: {raw_links}, attempting to cleanup")
+    clean_links = []
+    for item in raw_links:
+        log.debug(f"Cleaning up {item}")
+        cl = item.rsplit("?", 1) #avoiding the issue described in comment of download_file()
+        cl = str(cl[0])
 
-    return clean_link
+        cl = cl.replace("\\", "") #avoiding backslashes in url - requests cant into them
+        clean_links.append(cl)
+
+    log.debug(f"Clean links are: {clean_links}")
+
+    return clean_links
 
 # argparse shenanigans
 ap = argparse.ArgumentParser()
@@ -93,18 +98,20 @@ else:
     exit(1)
 
 if args.directory:
-    log.debug(f"Attempting to set downloads directory to {args.directory}")
-    try:
-        makedirs(args.directory, exist_ok=True)
-    except Exception as e:
-        log.error(f"An error has happend while trying to create downloads directory: {e}")
-        print(f"Couldnt set custom downloads directory. Are you sure provided path is correct?")
-        exit(1)
-    print(f"Downloads directory has been set to {args.directory}")
+    log.debug(f"Custom downloads directory will be: {args.directory}")
     DOWNLOAD_DIRECTORY = args.directory
 else:
-    print(f"Downloads directory isnt set, will use default: {DEFAULT_DOWNLOAD_DIRECTORY}")
+    log.debug(f"Custom downloads directory isnt set, will use default: {DEFAULT_DOWNLOAD_DIRECTORY}")
     DOWNLOAD_DIRECTORY = DEFAULT_DOWNLOAD_DIRECTORY
+
+try:
+    makedirs(DOWNLOAD_DIRECTORY, exist_ok=True)
+except Exception as e:
+    log.error(f"An error has happend while trying to create downloads directory: {e}")
+    print(f"Couldnt set downloads directory. Either provided path is incorrect or you have no rights to write into {DOWNLOAD_DIRECTORY}")
+    exit(1)
+print(f"Downloads directory has been set to {DOWNLOAD_DIRECTORY}")
+
 DOWNLOAD_URL = args.url
 
 print(f"Attempting to download media from {DOWNLOAD_URL}")
@@ -116,19 +123,20 @@ except Exception as e:
     exit(1)
 
 try:
-    link = get_download_link(page_html, RULESET_FIND)
+    links = get_download_links(page_html, RULESET_FIND)
 except Exception as e:
     log.error(f"Some unfortunate error has happend: {e}")
     print("Couldnt find download link :( Are you sure this link should contain supported file type?")
     exit(1)
 
-try:
-    print(f"Downloading the file from {link} - depending on size, it may require some time")
-    download_file(link)
-except Exception as e:
-    log.error(f"Some unfortunate error has happend: {e}")
-    print("Couldnt download the files :( Please double-check your internet connection and try again")
-    exit(1)
+for link in links:
+    try:
+        print(f"Downloading the file from {link} - depending on size, it may require some time")
+        download_file(link)
+    except Exception as e:
+        log.error(f"Some unfortunate error has happend: {e}")
+        print("Couldnt download the files :( Please double-check your internet connection and try again")
+        continue #used to sys.exit(1), but it would be bad to break everything if just one file fails. May do something about that later
 
 print("Done")
 exit(0)
