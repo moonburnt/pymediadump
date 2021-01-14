@@ -11,7 +11,7 @@ This is a python-powered tool to download required media files from sites. Dont 
 
 **Example Usage:**
 
-`pymediadump.py https://www.newgrounds.com/portal/view/746618 -r ./rules/newgrounds-swf-games.ini -d ./ng-games`
+`pmd-cli.py https://www.newgrounds.com/portal/view/746618 -r ./rules/newgrounds-swf-games.ini -d ./ng-games`
 
 **License:**
 
