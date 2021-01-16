@@ -59,7 +59,9 @@ class PyMediaDump:
         data.raise_for_status()
 
         log.debug(f"Trying to determine filename")
-        fn = link.rsplit('/', 1) #this aint perfect, coz link may contain some garbage such as id after file name
+        urlcontent = urlparse(url)
+        fp = urlcontent[2]
+        fn = fp.rsplit('/', 1)
         filename = str(fn[1])
         save_path = join(downloads_directory, filename)
 
@@ -77,8 +79,6 @@ class PyMediaDump:
         clean_links = []
         for item in raw_links:
             log.debug(f"Cleaning up {item}")
-            cl = item.rsplit("?", 1) #avoiding the issue described in comment of download_file()
-            cl = str(cl[0])
 
             cl = cl.replace("\\", "") #avoiding backslashes in url - requests cant into them
             clean_links.append(cl)
