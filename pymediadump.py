@@ -34,32 +34,31 @@ class PyMediaDump:
         self.session = requests.Session()
 
     def get_page_source(self, link):
-        '''Receives str(webpage url), returns raw content of said page'''
+        '''Receives str(webpage url), returns raw content of said page and page's referer'''
         log.debug(f"Fetching page content from {link}")
         page = self.session.get(link, timeout = 100)
         page.raise_for_status()
 
-        #this part may be done better, as it will break if you will try to fetch multiple pages before downloading
         url = urlparse(link)
-        self.referer = f'{url.scheme}://{url.netloc}/'
+        referer = f'{url.scheme}://{url.netloc}/'
 
-        log.debug(f"Saved {self.referer} as referer for future downloads")
+        log.debug(f"Got referer: {referer}")
 
-        return page.text
+        return page.text, referer
 
-    def download_file(self, link, downloads_directory):
+    def download_file(self, link, downloads_directory, referer=None):
         '''Receives str(link to download file) and str(path to download directory), saves file to dir'''
         log.debug(f"Fetching file from {link}")
-        if self.referer:
-            log.debug(f"Found referer, will use it to download file: {self.referer}")
-            data = self.session.get(link, timeout = 100, headers={'referer': self.referer})
+        if referer:
+            log.debug(f"Found referer, will use it to download file: {referer}")
+            data = self.session.get(link, timeout = 100, headers={'referer': referer})
         else:
             log.debug("Didnt find referer, will try to download without it")
             data = self.session.get(link, timeout = 100)
         data.raise_for_status()
 
         log.debug(f"Trying to determine filename")
-        urlcontent = urlparse(url)
+        urlcontent = urlparse(link)
         fp = urlcontent[2]
         fn = fp.rsplit('/', 1)
         filename = str(fn[1])
@@ -71,7 +70,7 @@ class PyMediaDump:
         log.info(f"Successfully saved {filename} as {save_path}")
 
     def get_download_links(self, page, search_rule):
-        '''Receives str(webpage's html content) and str(search rule), returns link to download file'''
+        '''Receives str(webpage's html content) and str(search rule), returns list(links to download files)'''
         log.debug(f"Searching for expression in html source")
         raw_links = findall(search_rule, page) #this will create list with all matching links
 
@@ -80,7 +79,7 @@ class PyMediaDump:
         for item in raw_links:
             log.debug(f"Cleaning up {item}")
 
-            cl = cl.replace("\\", "") #avoiding backslashes in url - requests cant into them
+            cl = item.replace("\\", "") #avoiding backslashes in url - requests cant into them
             clean_links.append(cl)
 
         log.debug(f"Clean links are: {clean_links}")
