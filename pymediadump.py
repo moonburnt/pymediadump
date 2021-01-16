@@ -17,8 +17,8 @@
 import requests
 import logging
 from re import findall
-
 from urllib.parse import urlparse
+from os.path import join
 
 # Custom logger
 log = logging.getLogger(__name__)
@@ -61,7 +61,7 @@ class PyMediaDump:
         log.debug(f"Trying to determine filename")
         fn = link.rsplit('/', 1) #this aint perfect, coz link may contain some garbage such as id after file name
         filename = str(fn[1])
-        save_path = downloads_directory+"/"+filename
+        save_path = join(downloads_directory, filename)
 
         log.debug(f"Attempting to save file as {save_path}")
         with open(save_path, 'wb') as f:
