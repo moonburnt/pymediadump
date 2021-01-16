@@ -50,7 +50,7 @@ class PyMediaDump:
         '''Receives str(link to download file) and str(path to download directory), saves file to dir'''
         log.debug(f"Fetching file from {link}")
         if referer:
-            log.debug(f"Found referer, will use it to download file: {referer}")
+            log.debug(f"Got referer {referer}, will use it to download file: {referer}")
             data = self.session.get(link, timeout = 100, headers={'referer': referer})
         else:
             log.debug("Didnt find referer, will try to download without it")
