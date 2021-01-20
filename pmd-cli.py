@@ -128,6 +128,7 @@ def get_matching_rules(link, rules):
 ap = argparse.ArgumentParser()
 ap.add_argument("url", help="URL of webpage, from which you want to download your media", type=str)
 ap.add_argument("-d", "--directory", help="Custom path to downloads directory", type=str)
+ap.add_argument("--dryrun", help="Dont download anything - just print what will be downloaded", action="store_true")
 args = ap.parse_args()
 
 if args.directory:
@@ -207,8 +208,9 @@ for item in matching_rules:
 for link in download_links:
     try:
         print(f"Downloading the file from {link} - depending on size, it may require some time")
-        sleep(3) #waiting a bit to avoid getting banned for spamming requests. I should probably turn this number into launch argument
-        pmd.download_file(link, DOWNLOAD_DIRECTORY, referer=page_referer)
+        if not args.dryrun:
+            sleep(3) #waiting a bit to avoid getting banned for spamming requests. I should probably turn this number into launch argument
+            pmd.download_file(link, DOWNLOAD_DIRECTORY, referer=page_referer)
     except Exception as e:
         log.error(f"Some unfortunate error has happend: {e}")
         print("Couldnt download the files :( Please double-check your internet connection and try again")
