@@ -25,6 +25,7 @@ from time import sleep
 from re import match
 
 DEFAULT_DOWNLOAD_DIRECTORY="./Downloads"
+DEFAULT_WAIT_TIME=3
 RULES_DIRECTORY = "./rules"
 pmd = pymediadump.PyMediaDump()
 
@@ -129,6 +130,7 @@ ap = argparse.ArgumentParser()
 ap.add_argument("url", help="URL of webpage, from which you want to download your media", type=str)
 ap.add_argument("-d", "--directory", help="Custom path to downloads directory", type=str)
 ap.add_argument("--dryrun", help="Dont download anything - just print what will be downloaded", action="store_true")
+ap.add_argument("-w", "--wait", help=f"Amount of seconds of pause between downloads (to avoid getting banned for lots of requests). Default = {DEFAULT_WAIT_TIME}", type=int)
 args = ap.parse_args()
 
 if args.directory:
@@ -137,6 +139,13 @@ if args.directory:
 else:
     log.debug(f"Custom downloads directory isnt set, will use default: {DEFAULT_DOWNLOAD_DIRECTORY}")
     DOWNLOAD_DIRECTORY = DEFAULT_DOWNLOAD_DIRECTORY
+
+if args.wait:
+    log.debug(f"Setting lengh of pause between downloads to be {args.wait} seconds")
+    WAIT_TIME = args.wait
+else:
+    log.debug(f"Custom lengh of pause hasnt been set, will use default: {DEFAULT_WAIT_TIME} seconds")
+    WAIT_TIME = DEFAULT_WAIT_TIME
 
 try:
     makedirs(DOWNLOAD_DIRECTORY, exist_ok=True)
@@ -208,8 +217,10 @@ for item in matching_rules:
 for link in download_links:
     try:
         print(f"Downloading the file from {link} - depending on size, it may require some time")
+        log.debug(f"Waiting {WAIT_TIME} seconds before download to avoid getting banned for spam")
+        sleep(WAIT_TIME)
+        log.debug(f"Attempting to download {link} to {DOWNLOAD_DIRECTORY} with referer {page_referer}")
         if not args.dryrun:
-            sleep(3) #waiting a bit to avoid getting banned for spamming requests. I should probably turn this number into launch argument
             pmd.download_file(link, DOWNLOAD_DIRECTORY, referer=page_referer)
     except Exception as e:
         log.error(f"Some unfortunate error has happend: {e}")
