@@ -130,8 +130,15 @@ ap = argparse.ArgumentParser()
 ap.add_argument("url", help="URL of webpage, from which you want to download your media", type=str)
 ap.add_argument("-d", "--directory", help="Custom path to downloads directory", type=str)
 ap.add_argument("--dryrun", help="Dont download anything - just print what will be downloaded", action="store_true")
-ap.add_argument("-w", "--wait", help=f"Amount of seconds of pause between downloads (to avoid getting banned for lots of requests). Default = {DEFAULT_WAIT_TIME}", type=int)
+ap.add_argument("-w", "--wait", help=f"Amount of seconds of pause between downloads (to avoid getting banned for lots of requests). Default/Minimally allowed = {DEFAULT_WAIT_TIME}", type=int)
 args = ap.parse_args()
+
+if args.wait and (args.wait > DEFAULT_WAIT_TIME):
+    log.debug(f"Setting lengh of pause between downloads to be {args.wait} seconds")
+    WAIT_TIME = args.wait
+else:
+    log.debug(f"Didnt get valid custom pause lengh, will use default: {DEFAULT_WAIT_TIME} seconds")
+    WAIT_TIME = DEFAULT_WAIT_TIME
 
 if args.directory:
     log.debug(f"Custom downloads directory will be: {args.directory}")
@@ -139,13 +146,6 @@ if args.directory:
 else:
     log.debug(f"Custom downloads directory isnt set, will use default: {DEFAULT_DOWNLOAD_DIRECTORY}")
     DOWNLOAD_DIRECTORY = DEFAULT_DOWNLOAD_DIRECTORY
-
-if args.wait:
-    log.debug(f"Setting lengh of pause between downloads to be {args.wait} seconds")
-    WAIT_TIME = args.wait
-else:
-    log.debug(f"Custom lengh of pause hasnt been set, will use default: {DEFAULT_WAIT_TIME} seconds")
-    WAIT_TIME = DEFAULT_WAIT_TIME
 
 try:
     makedirs(DOWNLOAD_DIRECTORY, exist_ok=True)
