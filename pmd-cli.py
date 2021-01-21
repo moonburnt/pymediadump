@@ -68,14 +68,14 @@ def rule_parser(configfile):
     main = {}
     main['Name'] = cp['Main']['Name']
     main['Description'] = cp['Main']['Description']
-    main['URLs'] = cp['Main']['URLs']
+    main['URLs'] = cp['Main']['URLs'].split(" | ")
     log.debug(f"Content of Main is {main}")
 
     log.debug(f"Processing the Rules category")
     rules = {}
-    rules['Find'] = cp['Rules']['Find']
+    rules['Find'] = cp['Rules']['Find'].split(" | ")
     try:
-        rules['Exclude'] = cp['Rules']['Exclude']
+        rules['Exclude'] = cp['Rules']['Exclude'].split(" | ")
     except:
         pass
     log.debug(f"Content of Rules is {rules}")
@@ -108,19 +108,21 @@ def get_matching_rules(link, rules):
     matching_rules = []
 
     for item in rules:
-        log.debug(f"Checking {item}")
+        log.debug(f"Checking rule {item}")
         supported_urls = item['Main']['URLs']
-        try:
-            if match(supported_urls, DOWNLOAD_URL):
-                log.debug(f"{item} matches url {link}. Adding to list")
-                matching_rules.append(item)
-            else:
-                print(f"{item} doesnt match, skipping")
+        for url in supported_urls:
+            log.debug(f"Comparing {link} with {url}")
+            try:
+                if match(url, DOWNLOAD_URL):
+                    log.debug(f"{item} matches url {link}. Adding to list")
+                    matching_rules.append(item)
+                else:
+                    print(f"{item} doesnt match, skipping")
+                    continue
+            except Exception as e:
+                log.error(f"An error has happend while trying to process {item} rule: {e}")
+                log.warning(f"Couldnt parse {item}, skipping")
                 continue
-        except Exception as e:
-            log.error(f"An error has happend while trying to process {item} rule: {e}")
-            log.warning(f"Couldnt parse {item}, skipping")
-            continue
 
     log.debug(f"The following rules has matched {link} url: {matching_rules}")
     return matching_rules
@@ -178,38 +180,40 @@ download_links = []
 for item in matching_rules:
     log.debug(f"Trying to find links, based on rule {item}")
 
-    find_rule = item['Rules']['Find']
-    log.debug(f"Found search rule: {find_rule}")
+    find_rules = item['Rules']['Find']
+    log.debug(f"Found search rules: {find_rules}")
     try:
-        exclude_rule = item['Rules']['Exclude']
-        log.debug(f"Found exclude rule: {exclude_rule}")
+        exclude_rules = item['Rules']['Exclude']
+        log.debug(f"Found exclude rule: {exclude_rules}")
     except:
-        exclude_rule = None
+        exclude_rules = None
         log.debug(f"No exclusion rule has been found")
 
-    try:
-        links = pmd.get_download_links(page_html, find_rule)
-        log.debug(f"Found following download links: {links}")
-        #download_links += links
-    except Exception as e:
-        log.error(f"Some unfortunate error has happend: {e}")
-        log.debug(f"No links matching rule {item} has been found, skipping")
-        continue
+    for find_rule in find_rules:
+        try:
+            links = pmd.get_download_links(page_html, find_rule)
+            log.debug(f"Found following download links: {links}")
+            #download_links += links
+        except Exception as e:
+            log.error(f"Some unfortunate error has happend: {e}")
+            log.debug(f"No links matching rule {item} has been found, skipping")
+            continue
 
     #If Im right, this will execute as "else" without specifically saying it
-    if exclude_rule:
-        log.debug(f"Trying to exclude links, based on {exclude_rule}")
-        for link in links:
-            try:
-                if match(exclude_rule, link):
-                    log.debug(f"{link} matches exclusion rule {exclude_rule}, removing")
-                    links.remove(link)
-                else:
-                    log.debug(f"{link} is fine, skipping")
-                    continue
-            except Exception as e:
-                log.error(f"Some unfortunate error has happend: {e}")
-                log.debug(f"No links matching exclude rule {item} has been found, skipping")
+    if exclude_rules:
+        for exclude_rule in exclude_rules:
+            log.debug(f"Trying to exclude links, based on {exclude_rule}")
+            for link in links:
+                try:
+                    if match(exclude_rule, link):
+                        log.debug(f"{link} matches exclusion rule {exclude_rule}, removing")
+                        links.remove(link)
+                    else:
+                        log.debug(f"{link} is fine, skipping")
+                        continue
+                except Exception as e:
+                    log.error(f"Some unfortunate error has happend: {e}")
+                    log.debug(f"No links matching exclude rule {item} has been found, skipping")
 
     log.debug(f"Adding following links to downloads list: {links}")
     download_links += links
