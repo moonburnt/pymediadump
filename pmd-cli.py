@@ -113,7 +113,7 @@ def get_matching_rules(link, rules):
         for url in supported_urls:
             log.debug(f"Comparing {link} with {url}")
             try:
-                if match(url, DOWNLOAD_URL):
+                if match(url, link):
                     log.debug(f"{item} matches url {link}. Adding to list")
                     matching_rules.append(item)
                 else:
@@ -127,9 +127,70 @@ def get_matching_rules(link, rules):
     log.debug(f"The following rules has matched {link} url: {matching_rules}")
     return matching_rules
 
+def process_provided_url(download_url):
+    '''Receives str(webpage to process). Returns dictionary with original url, referer and links to download files'''
+    log.debug(f"Attempting to process {download_url}")
+
+    link_data = {}
+    link_data['Webpage_URL'] = download_url
+
+    try:
+        page_html, link_data['Referer'] = pmd.get_page_source(download_url)
+    except Exception as e:
+        log.error(f"Some unfortunate error has happend: {e}")
+        print(f"Couldnt fetch provided url. Are you sure your link is correct and you have internet connection?")
+        return
+
+    download_links = []
+    for item in matching_rules:
+        log.debug(f"Trying to find links, based on rule {item}")
+
+        find_rules = item['Rules']['Find']
+        log.debug(f"Found search rules: {find_rules}")
+        try:
+            exclude_rules = item['Rules']['Exclude']
+            log.debug(f"Found exclude rule: {exclude_rules}")
+        except:
+            exclude_rules = None
+            log.debug(f"No exclusion rule has been found")
+
+        for find_rule in find_rules:
+            try:
+                links = pmd.get_download_links(page_html, find_rule)
+                log.debug(f"Found following download links: {links}")
+                #download_links += links
+            except Exception as e:
+                log.error(f"Some unfortunate error has happend: {e}")
+                log.debug(f"No links matching rule {item} has been found, skipping")
+                continue
+
+        #If Im right, this will execute as "else" without specifically saying it
+        if exclude_rules:
+            for exclude_rule in exclude_rules:
+                log.debug(f"Trying to exclude links, based on {exclude_rule}")
+                for link in links:
+                    try:
+                        if match(exclude_rule, link):
+                            log.debug(f"{link} matches exclusion rule {exclude_rule}, removing")
+                            links.remove(link)
+                        else:
+                            log.debug(f"{link} is fine, skipping")
+                            continue
+                    except Exception as e:
+                        log.error(f"Some unfortunate error has happend: {e}")
+                        log.debug(f"No links matching exclude rule {item} has been found, skipping")
+
+        log.debug(f"Adding following links to downloads list: {links}")
+        download_links += links
+
+    link_data['Download_URLs'] = download_links
+    log.debug(f"Returning following data collected from {download_url}: {link_data}")
+    return link_data
+
 # argparse shenanigans
 ap = argparse.ArgumentParser()
-ap.add_argument("url", help="URL of webpage, from which you want to download your media", type=str)
+#+ of nargs stands for "1 or more", ? = 0 or more
+ap.add_argument("url", help="URL (or multiple) of webpage, from which you want to download your media", nargs='+', type=str)
 ap.add_argument("-d", "--directory", help="Custom path to downloads directory", type=str)
 ap.add_argument("--dryrun", help="Dont download anything - just print what will be downloaded", action="store_true")
 ap.add_argument("-w", "--wait", help=f"Amount of seconds of pause between downloads (to avoid getting banned for lots of requests). Default/Minimally allowed = {DEFAULT_WAIT_TIME}", type=int)
@@ -157,79 +218,33 @@ except Exception as e:
     exit(1)
 print(f"Downloads directory has been set to {DOWNLOAD_DIRECTORY}")
 
-DOWNLOAD_URL = args.url
-
 print(f"Attempting to get list of available download rules")
 known_rule_files = get_files(RULES_DIRECTORY)
 valid_rules = get_rules(known_rule_files)
-matching_rules = get_matching_rules(DOWNLOAD_URL, valid_rules)
-if len(matching_rules) == 0:
-    #for now we exit, later will need rework for multiple urls
-    print(f"No matching rules has been found for url {DOWNLOAD_URL}. Abort")
-    exit(1)
 
-print(f"Attempting to download media from {DOWNLOAD_URL}")
-try:
-    page_html, page_referer = pmd.get_page_source(DOWNLOAD_URL)
-except Exception as e:
-    log.error(f"Some unfortunate error has happend: {e}")
-    print(f"Couldnt fetch provided url. Are you sure your link is correct and you have internet connection?")
-    exit(1)
+downloads_data = []
+for link in args.url:
+    print(f"Processing provided url: {link}")
+    matching_rules = get_matching_rules(link, valid_rules)
+    if len(matching_rules) == 0:
+        print(f"No matching rules has been found for url {link}")
+        continue
+    downloads_data.append(process_provided_url(link))
+log.debug(f"Got following data regarding downloads: {downloads_data}")
 
-download_links = []
-for item in matching_rules:
-    log.debug(f"Trying to find links, based on rule {item}")
-
-    find_rules = item['Rules']['Find']
-    log.debug(f"Found search rules: {find_rules}")
-    try:
-        exclude_rules = item['Rules']['Exclude']
-        log.debug(f"Found exclude rule: {exclude_rules}")
-    except:
-        exclude_rules = None
-        log.debug(f"No exclusion rule has been found")
-
-    for find_rule in find_rules:
+for entry in downloads_data:
+    for link in entry['Download_URLs']:
         try:
-            links = pmd.get_download_links(page_html, find_rule)
-            log.debug(f"Found following download links: {links}")
-            #download_links += links
+            print(f"Downloading the file from {link} - depending on size, it may require some time")
+            log.debug(f"Waiting {WAIT_TIME} seconds before download to avoid getting banned for spam")
+            sleep(WAIT_TIME)
+            log.debug(f"Attempting to download {link} to {DOWNLOAD_DIRECTORY} with referer {entry['Referer']}")
+            if not args.dryrun:
+                pmd.download_file(link, DOWNLOAD_DIRECTORY, referer=entry['Referer'])
         except Exception as e:
             log.error(f"Some unfortunate error has happend: {e}")
-            log.debug(f"No links matching rule {item} has been found, skipping")
-            continue
-
-    #If Im right, this will execute as "else" without specifically saying it
-    if exclude_rules:
-        for exclude_rule in exclude_rules:
-            log.debug(f"Trying to exclude links, based on {exclude_rule}")
-            for link in links:
-                try:
-                    if match(exclude_rule, link):
-                        log.debug(f"{link} matches exclusion rule {exclude_rule}, removing")
-                        links.remove(link)
-                    else:
-                        log.debug(f"{link} is fine, skipping")
-                        continue
-                except Exception as e:
-                    log.error(f"Some unfortunate error has happend: {e}")
-                    log.debug(f"No links matching exclude rule {item} has been found, skipping")
-
-    log.debug(f"Adding following links to downloads list: {links}")
-    download_links += links
-
-for link in download_links:
-    try:
-        print(f"Downloading the file from {link} - depending on size, it may require some time")
-        log.debug(f"Waiting {WAIT_TIME} seconds before download to avoid getting banned for spam")
-        sleep(WAIT_TIME)
-        log.debug(f"Attempting to download {link} to {DOWNLOAD_DIRECTORY} with referer {page_referer}")
-        if not args.dryrun:
-            pmd.download_file(link, DOWNLOAD_DIRECTORY, referer=page_referer)
-    except Exception as e:
-        log.error(f"Some unfortunate error has happend: {e}")
-        print("Couldnt download the files :( Please double-check your internet connection and try again")
-        continue #used to be sys.exit(1), but it would be bad to break everything if just one file fails. May do something about that later
+            print("Couldnt download the files :( Please double-check your internet connection and try again")
+            continue #to be replaced with some thing that retries up to X times
 
 print("Done")
 exit(0)
