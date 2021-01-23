@@ -62,7 +62,7 @@ def get_files(dirname):
     return files
 
 def links_to_file(mylist, filename):
-    '''Receives list(data to write to text file) and str(filename). Creates file with provided name and writes content of list to it, line by line'''
+    '''Receives list(data to write to text file) and str(path to file). Creates file with provided name and writes content of list to it, line by line'''
 
     #right now it overwrites file. Maybe will be better to append to it ('a') or do it dynamically, based on something like global "allow overwrite" flag
     with open(filename, 'w') as f:
@@ -71,6 +71,16 @@ def links_to_file(mylist, filename):
             log.debug(f"Processing {item}")
             f.writelines(f"{item}\n")
     log.debug(f"Successfully finished writing data to {filename}")
+
+def urls_from_file(filename):
+    '''Receives str(path to file), returns list(urls from file. One per line)'''
+    with open(filename, 'r') as f:
+        log.debug(f"Attempting to parse {filename}")
+        #data = f.readlines() #this used to add \n at the end of each entry
+        data = f.read().splitlines()
+
+    log.debug(f"Got following urls: {data}")
+    return data
 
 def rule_parser(configfile):
     '''Receives str(path to rule.ini file), returns dictionary with known data entries from it'''
@@ -213,13 +223,30 @@ def data_processor(download_url):
 # argparse shenanigans
 ap = argparse.ArgumentParser()
 #+ of nargs stands for "1 or more", ? = 0 or more
-ap.add_argument("url", help="URL (or multiple) of webpage, from which you want to download your media", nargs='+', type=str)
+ap.add_argument("url", help="URL (or multiple) of webpage, from which you want to download your media", nargs='?', type=str)
 ap.add_argument("-d", "--directory", help="Custom path to downloads directory", type=str)
 ap.add_argument("--dryrun", help="Dont download anything - just print what will be downloaded", action="store_true")
 ap.add_argument("-w", "--wait", help=f"Amount of seconds of pause between downloads (to avoid getting banned for lots of requests). Default/Minimally allowed = {DEFAULT_WAIT_TIME}", type=int)
 ap.add_argument("-ua", "--useragent", help=f"Specify custom user agent. If not set - will use {DEFAULT_USER_AGENT}", type=str)
 ap.add_argument("-tf", "--to-file", help="Instead of downloading data - writes it to provided file", type=str)
+ap.add_argument("-ff", "--from-file", help="Instead of providing urls as launch arguments - parse them from file. One url per line is supported", type=str)
 args = ap.parse_args()
+
+if args.from_file:
+    try:
+        URLS_TO_PROCESS = urls_from_file(args.from_file)
+    except Exception as e:
+        log.error(f"An error has happend while trying to open file {args.from_file}: {e}")
+        print(f"Couldnt read file {args.from_file}. Are you sure the path is correct and file contains data inside?")
+        exit(1)
+else:
+    URLS_TO_PROCESS = args.url
+
+if not URLS_TO_PROCESS:
+    print("Got no links to process! Either specify them with positional arguments or call -h for help")
+    exit(1)
+else:
+    log.debug(f"Attempting to process following urls: {URLS_TO_PROCESS}")
 
 if args.wait and (args.wait > DEFAULT_WAIT_TIME):
     WAIT_TIME = args.wait
@@ -245,7 +272,7 @@ known_rule_files = get_files(RULES_DIRECTORY)
 valid_rules = get_rules(known_rule_files)
 
 downloads_data = []
-for link in args.url:
+for link in URLS_TO_PROCESS:
     print(f"Processing provided url: {link}")
     matching_rules = get_matching_rules(link, valid_rules)
     if len(matching_rules) == 0:
