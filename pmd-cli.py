@@ -115,6 +115,7 @@ def get_matching_rules(link, rules):
         log.debug(f"Checking rule {item}")
         supported_urls = item['Main']['URLs']
         for url in supported_urls:
+            url = '(|http://|https://)'+url #avoiding necessity to provide protocol info in rule's URL
             log.debug(f"Comparing {link} with {url}")
             try:
                 if match(url, link):
