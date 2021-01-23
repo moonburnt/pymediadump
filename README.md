@@ -2,7 +2,7 @@
 
 **Description:**
 
-This is a python-powered tool to download required media files from sites. Dont set your hopes high tho - it only supports grabbing stuff thats accessible via page's html source (for more advanced needs check youtubedl or something like that) and only if you will feed it with search rules to find this data on page (out of box there are rules for [danbooru/safebooru posts](./rules/danbooru-media.ini), [newgrounds flash games](./rules/newgrounds-swf-games.ini) and [joyreactor posts with pictures](./rules/joyreactor-images.ini), but these are pretty self-explanatory and you can easily write your own rulesets). If I wont lose interest, someday this may get more features and maybe even gui, but for now - thats what you get. Just a mere cli web scraper, configurable with .ini
+This is a python-powered tool to download required media files from sites. Dont set your hopes high tho - it only supports grabbing stuff thats accessible via page's html source (for more advanced needs check youtubedl or something like that) and only if you will feed it with search rules to find the data you are looking for (but I've already provided you with [some examples](./rules/) and also made [guide regarding how to write your own](./HOWTO-RULES.md), so it shouldnt be difficult to start with). If I wont lose interest, someday this may get more features and maybe even gui, but for now - thats what you get. Just a mere cli web scraper, configurable with .ini
 
 **Dependencies:**
 
