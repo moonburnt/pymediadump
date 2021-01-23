@@ -61,6 +61,17 @@ def get_files(dirname):
     log.debug(f"Got following files in total: {files}")
     return files
 
+def links_to_file(mylist, filename):
+    '''Receives list(data to write to text file) and str(filename). Creates file with provided name and writes content of list to it, line by line'''
+
+    #right now it overwrites file. Maybe will be better to append to it ('a') or do it dynamically, based on something like global "allow overwrite" flag
+    with open(filename, 'w') as f:
+        log.debug(f"Writing links to file {filename}")
+        for item in mylist:
+            log.debug(f"Processing {item}")
+            f.writelines(f"{item}\n")
+    log.debug(f"Successfully finished writing data to {filename}")
+
 def rule_parser(configfile):
     '''Receives str(path to rule.ini file), returns dictionary with known data entries from it'''
     log.debug(f"Attempting to parse {configfile}")
@@ -207,6 +218,7 @@ ap.add_argument("-d", "--directory", help="Custom path to downloads directory", 
 ap.add_argument("--dryrun", help="Dont download anything - just print what will be downloaded", action="store_true")
 ap.add_argument("-w", "--wait", help=f"Amount of seconds of pause between downloads (to avoid getting banned for lots of requests). Default/Minimally allowed = {DEFAULT_WAIT_TIME}", type=int)
 ap.add_argument("-ua", "--useragent", help=f"Specify custom user agent. If not set - will use {DEFAULT_USER_AGENT}", type=str)
+ap.add_argument("-tf", "--to-file", help="Instead of downloading data - writes it to provided file", type=str)
 args = ap.parse_args()
 
 if args.wait and (args.wait > DEFAULT_WAIT_TIME):
@@ -243,19 +255,34 @@ for link in args.url:
 log.debug(f"Got following data regarding downloads: {downloads_data}")
 
 if downloads_data:
-    for entry in downloads_data:
-        for link in entry['Download_URLs']:
-            try:
-                print(f"Downloading the file from {link} - depending on size, it may require some time")
-                log.debug(f"Waiting {WAIT_TIME} seconds before download to avoid getting banned for spam")
-                sleep(WAIT_TIME)
-                log.debug(f"Attempting to download {link} to {DOWNLOAD_DIRECTORY} with referer {entry['Referer']}")
-                if not args.dryrun:
-                    pmd.download_file(link, DOWNLOAD_DIRECTORY, referer=entry['Referer'])
-            except Exception as e:
-                log.error(f"Some unfortunate error has happend: {e}")
-                print("Couldnt download the files :( Please double-check your internet connection and try again")
-                continue #to be replaced with some thing that retries up to X times
+    if not args.to_file:
+        for entry in downloads_data:
+            for link in entry['Download_URLs']:
+                try:
+                    print(f"Downloading the file from {link} - depending on size, it may require some time")
+                    log.debug(f"Waiting {WAIT_TIME} seconds before download to avoid getting banned for spam")
+                    sleep(WAIT_TIME)
+                    log.debug(f"Attempting to download {link} to {DOWNLOAD_DIRECTORY} with referer {entry['Referer']}")
+                    if not args.dryrun:
+                        pmd.download_file(link, DOWNLOAD_DIRECTORY, referer=entry['Referer'])
+                except Exception as e:
+                    log.error(f"Some unfortunate error has happend: {e}")
+                    print("Couldnt download the files :( Please double-check your internet connection and try again")
+                    continue #to be replaced with some thing that retries up to X times
+    else:
+        log.debug(f'Got flag --to-file. Adding urls to list')
+        urls = []
+        for entry in downloads_data:
+            for link in entry['Download_URLs']:
+                urls.append(link)
+        log.debug(f"Received following urls: {urls}")
+        log.debug(f"Attempting to write urls on disk")
+        try:
+            links_to_file(urls, args.to_file)
+        except Exception as e:
+            log.error(f"Some unfortunate error has happend: {e}")
+            print(f"Unable to write links to file {args.to_file}. Abort")
+            exit(1)
 
 print("Done")
 exit(0)
