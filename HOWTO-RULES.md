@@ -25,18 +25,20 @@ Aside from said, its worth mentioning importance of **correctly capitalizing you
 ## Basic rule's content
 
 The very basic rule file that would be considered a valid by pymediadump would look like that:
-`[Main]
+```
+[Main]
 Name = Example.com Urls
 Description = Download every url from example.com
 URLs = example.com
 
 [Rules]
-Find = "url":"(.*?)"`
+Find = "url":"(.*?)"
+```
 
 While it should be pretty much self-explanatory, lets dive deeper into currently introduced keys:
 - **Name**. Well, the name of rule. Usually kind of short version of description. `Name = Sitename Pictures`
 - **Description**. Description of what exactly this rule tries to get and from where. `Description = Download all images from sitename`
-- **URLs**. List of urls, this rule will apply to. Despite being in category dedicated for human-readable content, its one of the most important parts of your rule - **if you will spell its content incorrectly, script wont consider it matching your urls**. Also its worth mentioning that its the only entry of "Main" that **supports regular expressions**. Meaning instead of "one.sitename.com | two.sitename.com | three.sitename.com" you can just use ".*sitename.com". `URLs = sitename.com"`
+- **URLs**. List of urls, this rule will apply to. Despite being in category dedicated for human-readable content, its one of the most important parts of your rule - **if you will spell its content incorrectly, script wont consider it matching your urls**. Also its worth mentioning that its the only entry of "Main" that **supports regular expressions**. Meaning instead of "one.sitename.com | two.sitename.com | three.sitename.com" you can just use ".*sitename.com". `URLs = sitename.com`
 Above are the only keys in "Main" category. The rest, including optional keys, will be content of "Rules" category. Keep in mind that categories arent just to make things look pretty - **keys located in incorrect categories wont be recognized and will be considered missing**.
 
 Now about "Rules" category. As for now, there is but one key that necessary has to be there. The rest are optional things, we will talk about them later.

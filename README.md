@@ -11,7 +11,9 @@ This is a python-powered tool to download required media files from sites. Dont 
 
 **Example Usage:**
 
-`pmd-cli https://www.newgrounds.com/portal/view/746618 -d ./ng-games`
+```
+pmd-cli https://www.newgrounds.com/portal/view/746618 -d ./ng-games
+```
 
 **QA:**
 
