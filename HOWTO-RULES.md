@@ -18,7 +18,7 @@ As for the moment of writing, the following formatting is supported:
 - Square brackets to announce categories: `[Name of category]`
 - Equality sign to split key and values (works fine with spaces): `Key = Value`
 - Hashtags to make comments. Its highly recommended to only use these on separate lines: `#This is how comment looks like`
-- Binary operator **with spaces around it** to introduce multiple values per key. `Key = first value | second value | etc etc`
+- Vertical bar **with spaces around it** to introduce multiple values per key. `Key = first value | second value | etc etc`
 
 Aside from said, its worth mentioning importance of **correctly capitalizing your content**. Because "Main" and "main" are **CONSIDERED DIFFERENT THINGS**.
 

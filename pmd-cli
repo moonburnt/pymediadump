@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 ## pymediadump - simple tool to download various media files from sites
 ## Copyright (c) 2021 moonburnt
 ##
