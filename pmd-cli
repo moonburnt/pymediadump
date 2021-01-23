@@ -243,19 +243,20 @@ for link in args.url:
     downloads_data.append(data_processor(link))
 log.debug(f"Got following data regarding downloads: {downloads_data}")
 
-for entry in downloads_data:
-    for link in entry['Download_URLs']:
-        try:
-            print(f"Downloading the file from {link} - depending on size, it may require some time")
-            log.debug(f"Waiting {WAIT_TIME} seconds before download to avoid getting banned for spam")
-            sleep(WAIT_TIME)
-            log.debug(f"Attempting to download {link} to {DOWNLOAD_DIRECTORY} with referer {entry['Referer']}")
-            if not args.dryrun:
-                pmd.download_file(link, DOWNLOAD_DIRECTORY, referer=entry['Referer'])
-        except Exception as e:
-            log.error(f"Some unfortunate error has happend: {e}")
-            print("Couldnt download the files :( Please double-check your internet connection and try again")
-            continue #to be replaced with some thing that retries up to X times
+if downloads_data:
+    for entry in downloads_data:
+        for link in entry['Download_URLs']:
+            try:
+                print(f"Downloading the file from {link} - depending on size, it may require some time")
+                log.debug(f"Waiting {WAIT_TIME} seconds before download to avoid getting banned for spam")
+                sleep(WAIT_TIME)
+                log.debug(f"Attempting to download {link} to {DOWNLOAD_DIRECTORY} with referer {entry['Referer']}")
+                if not args.dryrun:
+                    pmd.download_file(link, DOWNLOAD_DIRECTORY, referer=entry['Referer'])
+            except Exception as e:
+                log.error(f"Some unfortunate error has happend: {e}")
+                print("Couldnt download the files :( Please double-check your internet connection and try again")
+                continue #to be replaced with some thing that retries up to X times
 
 print("Done")
 exit(0)
