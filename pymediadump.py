@@ -29,9 +29,12 @@ handler.setFormatter(logging.Formatter(fmt='[%(asctime)s][%(name)s][%(levelname)
 log.addHandler(handler)
 
 class PyMediaDump:
-    def __init__(self):
+    def __init__(self, useragent=None):
         log.debug(f"Initializing network session")
         self.session = requests.Session()
+        ua = useragent or requests.utils.default_user_agent() #this is basically equal to "if/else loop"
+        log.debug(f"Setting user agent to be {ua}")
+        self.session.headers.update({'user-agent': ua})
 
     def get_page_source(self, link):
         '''Receives str(webpage url), returns raw content of said page and page's referer'''
@@ -50,7 +53,7 @@ class PyMediaDump:
         '''Receives str(link to download file) and str(path to download directory), saves file to dir'''
         log.debug(f"Fetching file from {link}")
         if referer:
-            log.debug(f"Got referer {referer}, will use it to download file: {referer}")
+            log.debug(f"Attempting to download with referer {referer}")
             data = self.session.get(link, timeout = 100, headers={'referer': referer})
         else:
             log.debug("Didnt find referer, will try to download without it")

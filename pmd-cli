@@ -29,7 +29,8 @@ from re import match
 DEFAULT_DOWNLOAD_DIRECTORY="./Downloads"
 DEFAULT_WAIT_TIME=3
 RULES_DIRECTORY = "./rules"
-pmd = pymediadump.PyMediaDump()
+PROGRAM_NAME = "pymediadump"
+DEFAULT_USER_AGENT = PROGRAM_NAME
 
 # Custom logger
 log = logging.getLogger(__name__)
@@ -205,29 +206,27 @@ ap.add_argument("url", help="URL (or multiple) of webpage, from which you want t
 ap.add_argument("-d", "--directory", help="Custom path to downloads directory", type=str)
 ap.add_argument("--dryrun", help="Dont download anything - just print what will be downloaded", action="store_true")
 ap.add_argument("-w", "--wait", help=f"Amount of seconds of pause between downloads (to avoid getting banned for lots of requests). Default/Minimally allowed = {DEFAULT_WAIT_TIME}", type=int)
+ap.add_argument("-ua", "--useragent", help=f"Specify custom user agent. If not set - will use {DEFAULT_USER_AGENT}", type=str)
 args = ap.parse_args()
 
 if args.wait and (args.wait > DEFAULT_WAIT_TIME):
-    log.debug(f"Setting lengh of pause between downloads to be {args.wait} seconds")
     WAIT_TIME = args.wait
 else:
-    log.debug(f"Didnt get valid custom pause lengh, will use default: {DEFAULT_WAIT_TIME} seconds")
     WAIT_TIME = DEFAULT_WAIT_TIME
+log.info(f"Pause between downloads has been set to {WAIT_TIME} seconds")
 
-if args.directory:
-    log.debug(f"Custom downloads directory will be: {args.directory}")
-    DOWNLOAD_DIRECTORY = args.directory
-else:
-    log.debug(f"Custom downloads directory isnt set, will use default: {DEFAULT_DOWNLOAD_DIRECTORY}")
-    DOWNLOAD_DIRECTORY = DEFAULT_DOWNLOAD_DIRECTORY
-
+DOWNLOAD_DIRECTORY = args.directory or DEFAULT_DOWNLOAD_DIRECTORY
 try:
     makedirs(DOWNLOAD_DIRECTORY, exist_ok=True)
 except Exception as e:
     log.error(f"An error has happend while trying to create downloads directory: {e}")
     print(f"Couldnt set downloads directory. Either provided path is incorrect or you have no rights to write into {DOWNLOAD_DIRECTORY}")
     exit(1)
-print(f"Downloads directory has been set to {DOWNLOAD_DIRECTORY}")
+log.info(f"Downloads directory has been set to {DOWNLOAD_DIRECTORY}")
+
+USER_AGENT = args.useragent or DEFAULT_USER_AGENT
+pmd = pymediadump.PyMediaDump(USER_AGENT)
+log.info(f"User agent has been set to {USER_AGENT}")
 
 print(f"Attempting to get list of available download rules")
 known_rule_files = get_files(RULES_DIRECTORY)
