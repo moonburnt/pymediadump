@@ -77,7 +77,11 @@ def rule_parser(configfile):
     try:
         rules['Exclude'] = cp['Rules']['Exclude'].split(" | ")
     except:
-        pass
+        rules['Exclude'] = None #setting unmatching rules to "None" during parse process to avoid dealing with it later
+    try:
+        rules['Clear'] = cp['Rules']['Clear'].split(" | ")
+    except:
+        rules['Clear'] = None
     log.debug(f"Content of Rules is {rules}")
 
     log.debug(f"Turning complete data into dictionary")
@@ -127,7 +131,7 @@ def get_matching_rules(link, rules):
     log.debug(f"The following rules has matched {link} url: {matching_rules}")
     return matching_rules
 
-def process_provided_url(download_url):
+def data_processor(download_url):
     '''Receives str(webpage to process). Returns dictionary with original url, referer and links to download files'''
     log.debug(f"Attempting to process {download_url}")
 
@@ -141,49 +145,53 @@ def process_provided_url(download_url):
         print(f"Couldnt fetch provided url. Are you sure your link is correct and you have internet connection?")
         return
 
-    download_links = []
-    for item in matching_rules:
-        log.debug(f"Trying to find links, based on rule {item}")
+    download_data = []
+    for rule in matching_rules:
+        #log.debug(f"Processing rule {rule}")
+        log.debug(f"Trying to find data, based on rule {rule['Rules']['Find']}")
 
-        find_rules = item['Rules']['Find']
+        find_rules = rule['Rules']['Find']
         log.debug(f"Found search rules: {find_rules}")
-        try:
-            exclude_rules = item['Rules']['Exclude']
-            log.debug(f"Found exclude rule: {exclude_rules}")
-        except:
-            exclude_rules = None
-            log.debug(f"No exclusion rule has been found")
 
         for find_rule in find_rules:
             try:
-                links = pmd.get_download_links(page_html, find_rule)
-                log.debug(f"Found following download links: {links}")
-                #download_links += links
+                data = pmd.find_data(page_html, find_rule)
+                log.debug(f"Found following data: {data}")
             except Exception as e:
                 log.error(f"Some unfortunate error has happend: {e}")
-                log.debug(f"No links matching rule {item} has been found, skipping")
+                log.debug(f"No data matching find rule {rule} has been found, skipping")
                 continue
 
-        #If Im right, this will execute as "else" without specifically saying it
-        if exclude_rules:
-            for exclude_rule in exclude_rules:
-                log.debug(f"Trying to exclude links, based on {exclude_rule}")
-                for link in links:
+        if rule['Rules']['Exclude']:
+            for exclude_rule in rule['Rules']['Exclude']:
+                log.debug(f"Trying to exclude data, based on {exclude_rule}")
+                for link in data:
                     try:
                         if match(exclude_rule, link):
                             log.debug(f"{link} matches exclusion rule {exclude_rule}, removing")
-                            links.remove(link)
+                            data.remove(link)
                         else:
                             log.debug(f"{link} is fine, skipping")
                             continue
                     except Exception as e:
                         log.error(f"Some unfortunate error has happend: {e}")
-                        log.debug(f"No links matching exclude rule {item} has been found, skipping")
+                        log.debug(f"Couldnt apply exclude rule {rule}, skipping")
 
-        log.debug(f"Adding following links to downloads list: {links}")
-        download_links += links
+        if rule['Rules']['Clear']:
+            for clear_rule in rule['Rules']['Clear']:
+                log.debug(f"Trying to clear data, based on {clear_rule}")
+                try:
+                    cl = pmd.clear_data(data, clear_rule)
+                except Exception as e:
+                    log.error(f"Some unfortunate error has happend: {e}")
+                    log.debug(f"Couldnt apply clear rule {rule}, skipping")
+                else:
+                    data = cl
 
-    link_data['Download_URLs'] = download_links
+        log.debug(f"Adding following data to downloads list: {data}")
+        download_data += data
+
+    link_data['Download_URLs'] = download_data
     log.debug(f"Returning following data collected from {download_url}: {link_data}")
     return link_data
 
@@ -229,7 +237,7 @@ for link in args.url:
     if len(matching_rules) == 0:
         print(f"No matching rules has been found for url {link}")
         continue
-    downloads_data.append(process_provided_url(link))
+    downloads_data.append(data_processor(link))
 log.debug(f"Got following data regarding downloads: {downloads_data}")
 
 for entry in downloads_data:

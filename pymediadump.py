@@ -69,19 +69,26 @@ class PyMediaDump:
             f.write(data.content)
         log.info(f"Successfully saved {filename} as {save_path}")
 
-    def get_download_links(self, page, search_rule):
-        '''Receives str(webpage's html content) and str(search rule), returns list(links to download files)'''
-        log.debug(f"Searching for expression in html source")
-        raw_links = findall(search_rule, page) #this will create list with all matching links
+    def find_data(self, page, find_rule):
+        '''Receives str(webpage's html content) and str(find rule(content of rulefile's "find" key)), returns list(matching webpage parts)'''
+        log.debug(f"Applying {find_rule} find rule to the provided html")
+        matching_data = findall(find_rule, page) #this will create list with all matching entires
 
-        log.debug(f"Found matching download links: {raw_links}, attempting to cleanup")
-        clean_links = []
-        for item in raw_links:
+        log.debug(f"Found the following data that match {find_rule}: {matching_data}")
+
+        return matching_data
+
+    def clear_data(self, data, clearing_rule):
+        '''Receives list(data to clear) and str(rule to use to clear it up). Remove content according to second, then returns list(cleared data)'''
+
+        log.debug(f"Applying {clearing_rule} clear rule to {data} entries")
+        clean_data = []
+        for item in data:
             log.debug(f"Cleaning up {item}")
 
-            cl = item.replace("\\", "") #avoiding backslashes in url - requests cant into them
-            clean_links.append(cl)
+            cl = item.replace(clearing_rule, "")
+            clean_data.append(cl)
 
-        log.debug(f"Clean links are: {clean_links}")
+        log.debug(f"Cleared up data is the following: {clean_data}")
 
-        return clean_links
+        return clean_data
