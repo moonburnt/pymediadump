@@ -279,6 +279,8 @@ for link in URLS_TO_PROCESS:
         print(f"No matching rules has been found for url {link}")
         continue
     downloads_data.append(data_processor(link))
+    log.debug(f"Waiting {WAIT_TIME} seconds before processing next url to avoid getting banned for spam")
+    sleep(WAIT_TIME)
 log.debug(f"Got following data regarding downloads: {downloads_data}")
 
 if downloads_data:
