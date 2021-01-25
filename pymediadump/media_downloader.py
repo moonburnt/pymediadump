@@ -16,19 +16,12 @@
 
 import requests
 import logging
-from re import findall
 from urllib.parse import urlparse
 from os.path import join
 
-# Custom logger
 log = logging.getLogger(__name__)
-log.setLevel(logging.DEBUG)
-#log.setLevel(logging.WARNING)
-handler = logging.StreamHandler()
-handler.setFormatter(logging.Formatter(fmt='[%(asctime)s][%(name)s][%(levelname)s] %(message)s', datefmt='%H:%M:%S'))
-log.addHandler(handler)
 
-class PyMediaDump:
+class Media_Downloader:
     def __init__(self, useragent=None):
         log.debug(f"Initializing network session")
         self.session = requests.Session()
@@ -71,27 +64,3 @@ class PyMediaDump:
         with open(save_path, 'wb') as f:
             f.write(data.content)
         log.info(f"Successfully saved {filename} as {save_path}")
-
-    def find_data(self, page, find_rule):
-        '''Receives str(webpage's html content) and str(find rule(content of rulefile's "find" key)), returns list(matching webpage parts)'''
-        log.debug(f"Applying {find_rule} find rule to the provided html")
-        matching_data = findall(find_rule, page) #this will create list with all matching entires
-
-        log.debug(f"Found the following data that match {find_rule}: {matching_data}")
-
-        return matching_data
-
-    def clear_data(self, data, clearing_rule):
-        '''Receives list(data to clear) and str(rule to use to clear it up). Remove content according to second, then returns list(cleared data)'''
-
-        log.debug(f"Applying {clearing_rule} clear rule to {data} entries")
-        clean_data = []
-        for item in data:
-            log.debug(f"Cleaning up {item}")
-
-            cl = item.replace(clearing_rule, "")
-            clean_data.append(cl)
-
-        log.debug(f"Cleared up data is the following: {clean_data}")
-
-        return clean_data
